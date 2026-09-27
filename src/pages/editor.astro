@@ -18,6 +18,16 @@ const today = new Date().toISOString().slice(0, 10);
   <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- App instalable: se añade a la pantalla de inicio y abre sin barra. -->
+  <link rel="manifest" href={`${base}manifest.webmanifest`} />
+  <link rel="apple-touch-icon" href={`${base}app/icono-apple-180.png`} />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Escribir" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)" />
   <script is:inline>
     const t = localStorage.getItem('theme') ??
       (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -28,69 +38,34 @@ const today = new Date().toISOString().slice(0, 10);
 <body>
   <div class="ed-shell">
     <header class="ed-bar">
+      <h1 class="visual-oculto">Escribir una entrada para tonny.blog</h1>
       <span class="reader-crumb">
-        <a href={base} class="btn">←</a>
+        <a href={base} class="btn ed-volver" aria-label="Volver al blog">←</a>
         <span id="ed-crumb">Entrada sin título</span>
         <span class="pill" id="ed-state">Borrador local</span>
       </span>
       <span class="reader-acts">
-        <button class="btn" id="ed-new" type="button">Nueva</button>
-        <button class="btn" id="ed-diagramas" type="button">Diagramas</button>
-        <button class="btn" id="ed-redes" type="button" title="Imágenes para redes sociales">Redes</button>
-        <button class="btn" id="ed-list" type="button">Mis entradas</button>
-        <button class="btn" id="ed-key" type="button">Acceso</button>
+        <span class="ed-solo-ancho">
+          <button class="btn" id="ed-new" type="button">Nueva</button>
+          <button class="btn" id="ed-diagramas" type="button">Diagramas</button>
+          <button class="btn" id="ed-redes" type="button" title="Imágenes para redes sociales">Redes</button>
+          <button class="btn" id="ed-list" type="button">Mis entradas</button>
+          <button class="btn" id="ed-key" type="button">Acceso</button>
+        </span>
         <button class="btn btn-primary" id="ed-publish" type="button">Publicar</button>
       </span>
     </header>
-
-    <!-- Panel de acceso: el token vive solo en este navegador -->
-    <div class="ed-panel" id="ed-keypanel" hidden>
-      <p class="eyebrow">Acceso de publicación</p>
-      <p class="ed-note">
-        Para publicar, el editor escribe el archivo de la entrada en tu repositorio de
-        GitHub. Necesita un <strong>token de acceso personal</strong> con permiso de
-        contenido sobre <code>tny-me/Blog</code>. Se guarda únicamente en este
-        navegador (<code>localStorage</code>) y nunca viaja a otro sitio que no sea
-        <code>api.github.com</code>.
-      </p>
-      <div class="ed-keyrow">
-        <input type="password" id="ed-token" placeholder="github_pat_..." autocomplete="off" spellcheck="false" />
-        <button class="btn btn-primary" id="ed-save-token" type="button">Guardar</button>
-        <button class="btn" id="ed-clear-token" type="button">Borrar</button>
-      </div>
-      <p class="ed-note" id="ed-keystate"></p>
-      <p class="ed-note">
-        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
-          Crear un token de alcance limitado →
-        </a>
-        Elige <em>Only select repositories → Blog</em> y en permisos
-        <em>Repository permissions → Contents → Read and write</em>.
-      </p>
-    </div>
-
-    <!-- Los diagramas se escriben como texto: aqui se ven dibujados -->
-    <div class="ed-panel" id="ed-diagpanel" hidden>
-      <p class="eyebrow">Diagramas de la entrada</p>
-      <div id="ed-diagramas-out"></div>
-    </div>
-
-    <!-- Entradas publicadas: editar o eliminar -->
-    <div class="ed-panel" id="ed-listpanel" hidden>
-      <p class="eyebrow">Entradas publicadas</p>
-      <p class="ed-note">
-        Se leen directamente del repositorio. <strong>Editar</strong> carga la entrada
-        aquí para modificarla; al publicar se sobrescribe. <strong>Redes</strong> abre
-        el carrusel de imágenes de esa entrada, listo para descargar.
-        <strong>Eliminar</strong> la borra del sitio y no se puede deshacer desde aquí.
-      </p>
-      <div id="ed-posts"></div>
-    </div>
 
     <main class="ed-doc">
       <div class="page-inner">
         <input class="ed-title" id="ed-titulo" placeholder="Sin título" autocomplete="off" />
 
-        <div class="props ed-props">
+        <details class="ed-plegable" id="ed-detalles">
+          <summary class="ed-plegable-tapa">
+            <span>Detalles de la entrada</span>
+            <span class="ed-plegable-resumen" id="ed-detalles-resumen"></span>
+          </summary>
+          <div class="props ed-props">
           <label class="prop">
             <span class="prop-key">Fecha</span>
             <span class="prop-val"><input type="date" id="ed-fecha" value={today} /></span>
@@ -119,7 +94,8 @@ const today = new Date().toISOString().slice(0, 10);
               <span class="ed-hint">Si se marca, se guarda pero no se publica en el sitio.</span>
             </span>
           </label>
-        </div>
+          </div>
+        </details>
 
         <hr class="divider" />
 
@@ -133,6 +109,39 @@ const today = new Date().toISOString().slice(0, 10);
         </p>
       </div>
     </main>
+
+    <!-- Barra de formato: se pega encima del teclado mientras se escribe. -->
+    <div class="ed-tools" id="ed-tools" role="toolbar" aria-label="Formato" hidden>
+      <button class="ed-tool ed-tool-mas" type="button" data-accion="bloques" aria-label="Insertar bloque">+</button>
+      <span class="ed-tool-sep" aria-hidden="true"></span>
+      <button class="ed-tool" type="button" data-accion="negrita" aria-label="Negrita" aria-pressed="false"><b>B</b></button>
+      <button class="ed-tool" type="button" data-accion="cursiva" aria-label="Cursiva" aria-pressed="false"><i>I</i></button>
+      <button class="ed-tool" type="button" data-accion="h2" aria-label="Título" aria-pressed="false">H2</button>
+      <button class="ed-tool" type="button" data-accion="vinetas" aria-label="Lista con viñetas" aria-pressed="false">•</button>
+      <button class="ed-tool" type="button" data-accion="numerada" aria-label="Lista numerada" aria-pressed="false">1.</button>
+      <button class="ed-tool" type="button" data-accion="cita" aria-label="Cita" aria-pressed="false">❝</button>
+      <button class="ed-tool" type="button" data-accion="enlace" aria-label="Enlace">↗</button>
+      <button class="ed-tool" type="button" data-accion="imagen" aria-label="Subir imagen">🖼</button>
+      <span class="ed-tool-sep" aria-hidden="true"></span>
+      <button class="ed-tool" type="button" data-accion="deshacer" aria-label="Deshacer">↶</button>
+      <button class="ed-tool" type="button" data-accion="rehacer" aria-label="Rehacer">↷</button>
+    </div>
+
+    <!-- Pestañas inferiores: la navegación de la app en el teléfono. -->
+    <nav class="ed-tabs" id="ed-tabs" aria-label="Secciones">
+      <button class="ed-tab" type="button" data-vista="escribir" aria-current="page">
+        <span class="ed-tab-ico" aria-hidden="true">✎</span><span>Escribir</span>
+      </button>
+      <button class="ed-tab" type="button" data-vista="entradas">
+        <span class="ed-tab-ico" aria-hidden="true">☰</span><span>Entradas</span>
+      </button>
+      <button class="ed-tab" type="button" data-vista="imagenes">
+        <span class="ed-tab-ico" aria-hidden="true">▤</span><span>Imágenes</span>
+      </button>
+      <button class="ed-tab" type="button" data-vista="ajustes">
+        <span class="ed-tab-ico" aria-hidden="true">⚙</span><span>Ajustes</span>
+      </button>
+    </nav>
   </div>
 
   <!-- Controles de tabla, visibles solo con el cursor dentro de una -->
@@ -152,7 +161,96 @@ const today = new Date().toISOString().slice(0, 10);
   <!-- Menú de barra inclinada -->
   <div class="ed-slash" id="ed-slash" hidden></div>
 
-  <div class="ed-toast" id="ed-toast" hidden></div>
+  <!-- Hoja: en el móvil sube desde abajo; en pantalla ancha es un cuadro centrado. -->
+  <div class="ed-hoja" id="ed-hoja" hidden role="dialog" aria-modal="true" aria-labelledby="ed-hoja-titulo">
+    <div class="ed-hoja-fondo" id="ed-hoja-fondo"></div>
+    <div class="ed-hoja-caja">
+      <header class="ed-hoja-top">
+        <span class="ed-hoja-asa" aria-hidden="true"></span>
+        <h2 id="ed-hoja-titulo" tabindex="-1">Opciones</h2>
+        <button class="btn ed-hoja-cerrar" id="ed-hoja-cerrar" type="button" aria-label="Cerrar">✕</button>
+      </header>
+      <div class="ed-hoja-cuerpo">
+      <section class="ed-hoja-seccion" id="ed-bloquespanel" hidden>
+        <p class="ed-note">Toca un bloque para insertarlo donde está el cursor.</p>
+        <div class="ed-bloques" id="ed-bloques"></div>
+      </section>
+      <section class="ed-hoja-seccion" id="ed-imagenespanel" hidden>
+        <p class="ed-note">
+          Cada entrada publicada tiene su carrusel de láminas de 1080×1350, listas
+          para descargar o compartir. Se generan al publicarse el sitio.
+        </p>
+        <div id="ed-imagenes"></div>
+      </section>
+      <section class="ed-hoja-seccion" id="ed-ajustespanel" hidden>
+        <div class="ed-ajustes">
+          <button class="ed-ajuste" id="ed-instalar" type="button" hidden>
+            <span class="ed-ajuste-nom">Instalar la app</span>
+            <span class="ed-ajuste-sub">Queda con su icono y abre a pantalla completa.</span>
+          </button>
+          <p class="ed-note" id="ed-instalar-ios" hidden>
+            <strong>Para instalarla en el iPhone:</strong> pulsa
+            <strong>Compartir</strong> en la barra de Safari y luego
+            <strong>Añadir a pantalla de inicio</strong>.
+          </p>
+          <p class="ed-note" id="ed-instalada" hidden>Ya la estás usando como app instalada.</p>
+          <button class="ed-ajuste" id="ed-tema" type="button">
+            <span class="ed-ajuste-nom">Tema</span>
+            <span class="ed-ajuste-sub" id="ed-tema-sub">Claro</span>
+          </button>
+          <button class="ed-ajuste" id="ed-ir-acceso" type="button">
+            <span class="ed-ajuste-nom">Acceso de publicación</span>
+            <span class="ed-ajuste-sub" id="ed-acceso-sub">Sin token</span>
+          </button>
+          <button class="ed-ajuste" id="ed-ir-diagramas" type="button">
+            <span class="ed-ajuste-nom">Ver los diagramas dibujados</span>
+            <span class="ed-ajuste-sub">Los mapas y flujos de esta entrada.</span>
+          </button>
+          <a class="ed-ajuste" href={base}>
+            <span class="ed-ajuste-nom">Ir al blog</span>
+            <span class="ed-ajuste-sub">tonny.blog</span>
+          </a>
+        </div>
+      </section>
+      <section class="ed-hoja-seccion" id="ed-listpanel" hidden>
+      <p class="ed-note">
+        Se leen directamente del repositorio. <strong>Editar</strong> carga la entrada
+        aquí para modificarla; al publicar se sobrescribe. <strong>Redes</strong> abre
+        el carrusel de imágenes de esa entrada, listo para descargar.
+        <strong>Eliminar</strong> la borra del sitio y no se puede deshacer desde aquí.
+      </p>
+      <div id="ed-posts"></div>
+      </section>
+      <section class="ed-hoja-seccion" id="ed-diagpanel" hidden>
+      <div id="ed-diagramas-out"></div>
+      </section>
+      <section class="ed-hoja-seccion" id="ed-keypanel" hidden>
+      <p class="ed-note">
+        Para publicar, el editor escribe el archivo de la entrada en tu repositorio de
+        GitHub. Necesita un <strong>token de acceso personal</strong> con permiso de
+        contenido sobre <code>tny-me/Blog</code>. Se guarda únicamente en este
+        navegador (<code>localStorage</code>) y nunca viaja a otro sitio que no sea
+        <code>api.github.com</code>.
+      </p>
+      <div class="ed-keyrow">
+        <input type="password" id="ed-token" placeholder="github_pat_..." autocomplete="off" spellcheck="false" />
+        <button class="btn btn-primary" id="ed-save-token" type="button">Guardar</button>
+        <button class="btn" id="ed-clear-token" type="button">Borrar</button>
+      </div>
+      <p class="ed-note" id="ed-keystate"></p>
+      <p class="ed-note">
+        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
+          Crear un token de alcance limitado →
+        </a>
+        Elige <em>Only select repositories → Blog</em> y en permisos
+        <em>Repository permissions → Contents → Read and write</em>.
+      </p>
+      </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="ed-toast" id="ed-toast" role="status" aria-live="polite" hidden></div>
 
   <input type="file" id="ed-file" accept="image/*" hidden />
 </body>
@@ -182,12 +280,6 @@ const today = new Date().toISOString().slice(0, 10);
     min-width: 0;
   }
 
-  .ed-panel {
-    border-bottom: 1px solid var(--border);
-    background: var(--rail);
-    padding: 1.1rem 1.25rem;
-  }
-  .ed-panel .eyebrow { display: block; margin-bottom: 0.5rem; }
   .ed-note { font-size: 0.8125rem; color: var(--muted); line-height: 1.6; max-width: 70ch; margin-bottom: 0.6rem; }
   .ed-note code { font-family: var(--mono); font-size: 0.85em; background: var(--hover); border-radius: 3px; padding: 0.05em 0.3em; }
   .ed-note a { color: var(--blue); }
@@ -254,6 +346,7 @@ const today = new Date().toISOString().slice(0, 10);
   .ed-props input::placeholder { color: var(--faint); }
   .ed-hint { font-size: 0.75rem; color: var(--faint); }
   .ed-foot-hint { margin-top: 2rem; }
+  @media (max-width: 820px) { .ed-foot-hint { display: none; } }
   .ed-hint kbd, .ed-foot-hint kbd {
     font-family: var(--mono);
     font-size: 0.9em;
@@ -322,6 +415,16 @@ const today = new Date().toISOString().slice(0, 10);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
   }
   .ed-tabla-bar .btn { font-size: 0.75rem; padding: 0.2rem 0.4rem; }
+
+  /* Se lee, no se ve: para lectores de pantalla. */
+  .visual-oculto {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .ed-tabla-sep { width: 1px; height: 16px; background: var(--border); margin: 0 0.2rem; }
 
   .ed-toast {
@@ -340,10 +443,253 @@ const today = new Date().toISOString().slice(0, 10);
   }
   .ed-toast a { color: inherit; text-decoration: underline; }
 
+
+  /* ── Hoja de opciones ──────────────────────────────────── */
+  .ed-hoja { position: fixed; inset: 0; z-index: 60; display: flex; }
+  .ed-hoja[hidden] { display: none; }
+  .ed-hoja-fondo { position: absolute; inset: 0; background: rgba(15, 15, 14, 0.45); }
+  .ed-hoja-caja {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin: auto;
+    width: min(640px, calc(100% - 2rem));
+    max-height: min(80vh, 720px);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 24px 60px rgba(15, 15, 14, 0.24);
+  }
+  .ed-hoja-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .ed-hoja-top h2 { font-size: 0.9375rem; font-weight: 600; color: var(--text); }
+  .ed-hoja-asa { display: none; }
+  .ed-hoja-cerrar { font-size: 1rem; line-height: 1; min-width: 44px; min-height: 44px; }
+  .ed-hoja-cuerpo { overflow-y: auto; padding: 1rem; -webkit-overflow-scrolling: touch; }
+  .ed-hoja-seccion[hidden] { display: none; }
+  .ed-hoja-titulo:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
+
+  /* ── Elegir bloque ─────────────────────────────────────── */
+  .ed-bloques { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; }
+  .ed-bloque {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 56px;
+    padding: 0.6rem 0.7rem;
+    text-align: left;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .ed-bloque:hover, .ed-bloque:focus-visible { background: var(--hover); }
+  .ed-bloque-ico {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    background: var(--rail);
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+  .ed-bloque-nom { font-size: 0.875rem; font-weight: 500; }
+  .ed-bloque-sub { display: block; font-size: 0.75rem; color: var(--faint); }
+
+  /* ── Ajustes ───────────────────────────────────────────── */
+  .ed-ajustes { display: flex; flex-direction: column; gap: 0.4rem; }
+  .ed-ajuste {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-height: 56px;
+    justify-content: center;
+    padding: 0.7rem 0.8rem;
+    text-align: left;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .ed-ajuste:hover, .ed-ajuste:focus-visible { background: var(--hover); }
+  .ed-ajuste-nom { font-size: 0.875rem; font-weight: 500; }
+  .ed-ajuste-sub { font-size: 0.75rem; color: var(--faint); }
+
+  /* ── Datos de la entrada, plegables ────────────────────── */
+  .ed-plegable { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1.25rem; }
+  .ed-plegable[open] { padding-bottom: 0.4rem; }
+  .ed-plegable-tapa {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 48px;
+    padding: 0.6rem 0.85rem;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--muted);
+    list-style: none;
+  }
+  .ed-plegable-tapa::-webkit-details-marker { display: none; }
+  .ed-plegable-tapa::after { content: '▾'; color: var(--faint); }
+  .ed-plegable[open] .ed-plegable-tapa::after { content: '▴'; }
+  .ed-plegable-resumen {
+    flex: 1;
+    text-align: right;
+    font-weight: 400;
+    color: var(--faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ed-plegable[open] .ed-plegable-resumen { display: none; }
+  .ed-plegable .ed-props { padding: 0 0.85rem; }
+
+  /* ── Barra de formato y pestañas ───────────────────────── */
+  .ed-tools {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: var(--ed-teclado, 0px);
+    z-index: 40;
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+    padding: 0.35rem 0.5rem;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ed-tools[hidden] { display: none; }
+  .ed-tools::-webkit-scrollbar { display: none; }
+  .ed-tool {
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    color: var(--muted);
+  }
+  .ed-tool:hover, .ed-tool:focus-visible { background: var(--hover); color: var(--text); }
+  .ed-tool[aria-pressed="true"] { background: var(--hover); color: var(--text); }
+  .ed-tool-mas { font-size: 1.375rem; color: var(--text); }
+  .ed-tool-sep { flex-shrink: 0; width: 1px; height: 22px; background: var(--border); margin: 0 0.15rem; }
+
+  .ed-tabs { display: none; }
+  .ed-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    min-height: 52px;
+    font-size: 0.6875rem;
+    color: var(--faint);
+  }
+  .ed-tab-ico { font-size: 1.0625rem; line-height: 1; }
+  .ed-tab[aria-current="page"] { color: var(--text); }
+
+  /* El foco siempre se ve: se navega con teclado y con lector de pantalla. */
+  .ed-tool:focus-visible, .ed-tab:focus-visible, .ed-bloque:focus-visible,
+  .ed-ajuste:focus-visible, .ed-plegable-tapa:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ed-hoja-caja { animation: none !important; }
+  }
+
   @media (max-width: 900px) {
     .ed-doc { padding: 1.75rem 1.25rem 6rem; }
     .ed-title { font-size: 1.875rem; }
     .ed-props .prop { grid-template-columns: 1fr; }
+  }
+
+  /* ── Teléfono: la app ──────────────────────────────────── */
+  @media (max-width: 820px) {
+    .ed-solo-ancho { display: none; }
+    .ed-shell { min-height: 100dvh; }
+    /* Hueco para la barra de formato, las pestañas y el borde inferior. */
+    .ed-doc { padding: 1.25rem 1rem calc(8.5rem + env(safe-area-inset-bottom)); }
+    .ed-title { font-size: 1.625rem; }
+
+    .ed-bar { padding: 0.5rem 0.75rem; padding-top: calc(0.5rem + env(safe-area-inset-top)); }
+    .ed-bar .btn { min-height: 44px; }
+    .ed-volver { min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+    .ed-tabla-bar { gap: 0.25rem; padding: 0.3rem; max-width: calc(100vw - 1rem); overflow-x: auto; }
+    .ed-tabla-bar .btn { min-width: 44px; min-height: 44px; font-size: 0.8125rem; }
+
+    .ed-hoja-caja {
+      margin: auto 0 0;
+      width: 100%;
+      max-height: 88dvh;
+      border: none;
+      border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      animation: ed-subir 0.18s ease-out;
+    }
+    .ed-hoja-top { padding-top: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .ed-hoja-asa {
+      display: block;
+      width: 100%;
+      height: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .ed-hoja-asa::after {
+      content: '';
+      display: block;
+      width: 36px; height: 4px;
+      margin: 0 auto;
+      border-radius: 99px;
+      background: var(--border);
+    }
+    .ed-hoja-top h2 { flex: 1; }
+    .ed-hoja-cuerpo { padding: 1rem 1rem calc(1.25rem + env(safe-area-inset-bottom)); }
+    .ed-bloques { grid-template-columns: 1fr 1fr; }
+
+    .ed-tabs {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 45;
+      display: flex;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .ed-tools { bottom: calc(var(--ed-teclado, 0px) + 52px + env(safe-area-inset-bottom)); }
+
+    .ed-hoja[data-modo="vista"] { bottom: calc(52px + env(safe-area-inset-bottom)); }
+    .ed-hoja[data-modo="vista"] .ed-hoja-fondo { display: none; }
+    .ed-hoja[data-modo="vista"] .ed-hoja-caja {
+      margin: 0;
+      height: 100%;
+      max-height: none;
+      border-radius: 0;
+      border-top: none;
+      animation: none;
+    }
+    .ed-hoja[data-modo="vista"] .ed-hoja-asa { display: none; }
+    /* Las pestañas mandan: siempre por encima de la hoja. */
+    .ed-tabs { z-index: 70; }
+    /* Con el teclado abierto las pestañas estorban: manda la barra de formato. */
+    .ed-shell[data-teclado="si"] .ed-tabs { display: none; }
+    .ed-shell[data-teclado="si"] .ed-tools { bottom: var(--ed-teclado, 0px); }
+  }
+
+  @keyframes ed-subir {
+    from { transform: translateY(12px); opacity: 0.6; }
+    to { transform: translateY(0); opacity: 1; }
   }
 </style>
 
@@ -407,7 +753,7 @@ const today = new Date().toISOString().slice(0, 10);
     els.keyBtn.textContent = has ? 'Acceso ✓' : 'Acceso';
   }
 
-  els.keyBtn.addEventListener('click', () => { els.keyPanel.hidden = !els.keyPanel.hidden; });
+  els.keyBtn.addEventListener('click', () => abrirHoja('acceso'));
 
   $('ed-save-token').addEventListener('click', () => {
     const value = els.token.value.trim();
@@ -436,7 +782,11 @@ const today = new Date().toISOString().slice(0, 10);
       Figura,
       Video,
       Link.configure({ openOnClick: false }),
-      Placeholder.configure({ placeholder: 'Escribe, o pulsa "/" para insertar un bloque…' }),
+      Placeholder.configure({
+        placeholder: () => (window.matchMedia('(max-width: 820px)').matches
+          ? 'Escribe, o toca + para insertar un bloque…'
+          : 'Escribe, o pulsa "/" para insertar un bloque…'),
+      }),
     ],
     content: '<p></p>',
     onUpdate: () => { saveDraft(); refreshSlash(); },
@@ -848,12 +1198,12 @@ const today = new Date().toISOString().slice(0, 10);
     if (!res.ok) throw new Error(await ghError(res));
   }
 
-  async function cargarEntradas() {
+  async function cargarEntradas(destino = els.posts, modo: 'gestion' | 'imagenes' = 'gestion') {
     if (!getToken()) {
-      els.posts.innerHTML = '<p class="ed-note">Guarda un token en «Acceso» para ver tus entradas.</p>';
+      destino.innerHTML = '<p class="ed-note">Guarda un token en «Acceso» para ver tus entradas.</p>';
       return;
     }
-    els.posts.innerHTML = '<p class="ed-note">Cargando…</p>';
+    destino.innerHTML = '<p class="ed-note">Cargando…</p>';
     try {
       const res = await gh(`contents/${DIR}?ref=${REPO.branch}`);
       if (!res.ok) throw new Error(await ghError(res));
@@ -867,9 +1217,32 @@ const today = new Date().toISOString().slice(0, 10);
       }));
 
       entradas.sort((a, b) => String(b.data.date ?? '').localeCompare(String(a.data.date ?? '')));
-      pintarEntradas(entradas);
+      if (modo === 'imagenes') pintarImagenes(entradas, destino);
+      else pintarEntradas(entradas);
     } catch (err) {
-      els.posts.innerHTML = `<p class="ed-note">No se pudieron cargar: ${(err as Error).message}</p>`;
+      destino.innerHTML = `<p class="ed-note">No se pudieron cargar: ${(err as Error).message}</p>`;
+    }
+  }
+
+  /** Listado escueto: cada entrada con su enlace al carrusel de láminas. */
+  function pintarImagenes(entradas: Array<{ name: string; data: any }>, destino: HTMLElement) {
+    destino.innerHTML = '';
+    if (entradas.length === 0) {
+      destino.innerHTML = '<p class="ed-note">No hay entradas todavía.</p>';
+      return;
+    }
+    for (const entrada of entradas) {
+      const slug = entrada.name.replace(/\.md$/, '');
+      const fila = document.createElement('a');
+      fila.className = 'ed-ajuste';
+      fila.href = `/redes/${slug}/`;
+      fila.innerHTML =
+        `<span class="ed-ajuste-nom"></span>` +
+        `<span class="ed-ajuste-sub"></span>`;
+      (fila.firstElementChild as HTMLElement).textContent = entrada.data.title ?? slug;
+      (fila.lastElementChild as HTMLElement).textContent =
+        [entrada.data.date, entrada.data.category].filter(Boolean).join(' · ') + ' · Ver láminas →';
+      destino.appendChild(fila);
     }
   }
 
@@ -950,7 +1323,7 @@ const today = new Date().toISOString().slice(0, 10);
       editingPath = path;
       els.crumb.textContent = els.titulo.value || path;
       els.state.textContent = 'Editando publicada';
-      els.listPanel.hidden = true;
+      cerrarHoja();
       saveDraft();
       window.scrollTo({ top: 0, behavior: 'smooth' });
       toast('Entrada cargada. Al publicar se sobrescribe.');
@@ -1029,12 +1402,8 @@ const today = new Date().toISOString().slice(0, 10);
 
   // ── Vista previa de los diagramas ─────────────────────────
   const salidaDiag = $('ed-diagramas-out');
-  const panelDiag = $('ed-diagpanel');
 
-  $('ed-diagramas').addEventListener('click', async () => {
-    panelDiag.hidden = !panelDiag.hidden;
-    if (panelDiag.hidden) return;
-
+  async function dibujarDiagramas() {
     const codigos: string[] = [];
     editor.state.doc.descendants((nodo) => {
       if (nodo.type.name === 'codeBlock' && nodo.attrs.language === 'mermaid') {
@@ -1066,12 +1435,14 @@ const today = new Date().toISOString().slice(0, 10);
       }
       salidaDiag.appendChild(caja);
     }
+  }
+
+  $('ed-diagramas').addEventListener('click', () => {
+    abrirHoja('diagramas');
+    dibujarDiagramas();
   });
 
-  els.listBtn.addEventListener('click', () => {
-    els.listPanel.hidden = !els.listPanel.hidden;
-    if (!els.listPanel.hidden) cargarEntradas();
-  });
+  els.listBtn.addEventListener('click', () => abrirHoja('entradas'));
 
   // El carrusel se dibuja a partir de la entrada ya publicada, no del borrador
   // que hay en pantalla: por eso hace falta haberla guardado antes.
@@ -1093,7 +1464,7 @@ const today = new Date().toISOString().slice(0, 10);
     const titulo = els.titulo.value.trim();
     if (!titulo) return toast('Ponle un título a la entrada antes de publicar.');
     if (!getToken()) {
-      els.keyPanel.hidden = false;
+      abrirHoja('acceso');
       return toast('Guarda primero un token en «Acceso».');
     }
 
@@ -1133,5 +1504,294 @@ const today = new Date().toISOString().slice(0, 10);
       els.publish.textContent = 'Publicar';
     }
   });
+  // ══ La app en el teléfono ═══════════════════════════════════
+  //
+  // Todo lo que sigue convierte el editor en algo usable con el pulgar: una
+  // hoja para las opciones, pestañas abajo, una barra de formato que se pega
+  // encima del teclado, y el envoltorio para instalarla en la pantalla de
+  // inicio. En pantalla ancha nada de esto estorba: las pestañas y la barra
+  // se ocultan por CSS y la hoja se dibuja como un cuadro centrado.
+
+  const shell = document.querySelector('.ed-shell') as HTMLElement;
+  const hoja = $('ed-hoja');
+  const hojaTitulo = $('ed-hoja-titulo');
+  const hojaCaja = hoja.querySelector('.ed-hoja-caja') as HTMLElement;
+
+  const SECCIONES: Record<string, { id: string; titulo: string; alAbrir?: () => void }> = {
+    bloques: { id: 'ed-bloquespanel', titulo: 'Insertar' },
+    entradas: { id: 'ed-listpanel', titulo: 'Mis entradas', alAbrir: () => cargarEntradas() },
+    imagenes: {
+      id: 'ed-imagenespanel', titulo: 'Imágenes para redes',
+      alAbrir: () => cargarEntradas($('ed-imagenes'), 'imagenes'),
+    },
+    ajustes: { id: 'ed-ajustespanel', titulo: 'Ajustes', alAbrir: pintarAjustes },
+    diagramas: { id: 'ed-diagpanel', titulo: 'Diagramas' },
+    acceso: { id: 'ed-keypanel', titulo: 'Acceso de publicación', alAbrir: paintKeyState },
+  };
+
+  let focoPrevio: HTMLElement | null = null;
+  let hojaAbierta: string | null = null;
+  let hojaModal = false;
+
+  function abrirHoja(nombre: string, modo: 'vista' | 'modal' = 'modal') {
+    const seccion = SECCIONES[nombre];
+    if (!seccion) return;
+
+    focoPrevio = document.activeElement as HTMLElement;
+    hojaAbierta = nombre;
+    hojaModal = modo === 'modal';
+    hoja.dataset.modo = modo;
+    hojaTitulo.textContent = seccion.titulo;
+    for (const clave of Object.keys(SECCIONES)) {
+      $(SECCIONES[clave].id).hidden = clave !== nombre;
+    }
+    hoja.hidden = false;
+
+    // Un modal tapa lo de detrás; una vista convive con las pestañas.
+    if (hojaModal) {
+      hoja.setAttribute('aria-modal', 'true');
+      shell.setAttribute('aria-hidden', 'true');
+    } else {
+      hoja.removeAttribute('aria-modal');
+      shell.removeAttribute('aria-hidden');
+    }
+    document.body.style.overflow = 'hidden';
+    marcarPestana(nombre);
+    seccion.alAbrir?.();
+
+    // El foco entra en la hoja: si no, el lector de pantalla se queda detrás.
+    (hojaModal ? ($('ed-hoja-cerrar') as HTMLButtonElement) : hojaTitulo).focus();
+  }
+
+  function cerrarHoja() {
+    if (hoja.hidden) return;
+    hoja.hidden = true;
+    hoja.removeAttribute('aria-modal');
+    shell.removeAttribute('aria-hidden');
+    document.body.style.overflow = '';
+    hojaAbierta = null;
+    hojaModal = false;
+    marcarPestana('escribir');
+    focoPrevio?.focus?.();
+    focoPrevio = null;
+  }
+
+  $('ed-hoja-cerrar').addEventListener('click', cerrarHoja);
+  $('ed-hoja-fondo').addEventListener('click', cerrarHoja);
+
+  document.addEventListener('keydown', (e) => {
+    if (hoja.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); return cerrarHoja(); }
+    if (e.key !== 'Tab' || !hojaModal) return;
+    // El tabulador da vueltas dentro de la hoja mientras está abierta.
+    const foco = hojaCaja.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    const visibles = [...foco].filter((el) => el.offsetParent !== null);
+    if (visibles.length === 0) return;
+    const primero = visibles[0];
+    const ultimo = visibles[visibles.length - 1];
+    if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+  });
+
+  // ── Pestañas ──────────────────────────────────────────────
+  const pestanas = [...document.querySelectorAll<HTMLButtonElement>('.ed-tab')];
+
+  function marcarPestana(vista: string) {
+    for (const p of pestanas) {
+      if (p.dataset.vista === vista) p.setAttribute('aria-current', 'page');
+      else p.removeAttribute('aria-current');
+    }
+  }
+
+  for (const p of pestanas) {
+    p.addEventListener('click', () => {
+      const vista = p.dataset.vista ?? 'escribir';
+      if (vista === 'escribir') { cerrarHoja(); editor.commands.focus(); return; }
+      abrirHoja(vista, 'vista');
+    });
+  }
+
+  // ── Bloques ───────────────────────────────────────────────
+  const listaBloques = $('ed-bloques');
+  COMMANDS.forEach((cmd, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ed-bloque';
+    b.innerHTML =
+      '<span class="ed-bloque-ico" aria-hidden="true"></span>' +
+      '<span><span class="ed-bloque-nom"></span><span class="ed-bloque-sub"></span></span>';
+    (b.querySelector('.ed-bloque-ico') as HTMLElement).textContent = cmd.ico;
+    (b.querySelector('.ed-bloque-nom') as HTMLElement).textContent = cmd.label;
+    (b.querySelector('.ed-bloque-sub') as HTMLElement).textContent = cmd.sub;
+    b.addEventListener('click', () => {
+      cerrarHoja();
+      editor.commands.focus();
+      COMMANDS[i].run();
+    });
+    listaBloques.appendChild(b);
+  });
+
+  // ── Barra de formato ──────────────────────────────────────
+  const tools = $('ed-tools');
+  const botones = [...tools.querySelectorAll<HTMLButtonElement>('.ed-tool')];
+
+  const ACCIONES: Record<string, () => void> = {
+    bloques: () => abrirHoja('bloques'),
+    negrita: () => chain().toggleBold().run(),
+    cursiva: () => chain().toggleItalic().run(),
+    h2: () => chain().toggleHeading({ level: 2 }).run(),
+    vinetas: () => chain().toggleBulletList().run(),
+    numerada: () => chain().toggleOrderedList().run(),
+    cita: () => chain().toggleBlockquote().run(),
+    enlace: promptLink,
+    imagen: () => els.file.click(),
+    deshacer: () => chain().undo().run(),
+    rehacer: () => chain().redo().run(),
+  };
+
+  /** Qué marca de Tiptap mira cada botón para encenderse. */
+  const ACTIVO: Record<string, [string, Record<string, unknown>?]> = {
+    negrita: ['bold'],
+    cursiva: ['italic'],
+    h2: ['heading', { level: 2 }],
+    vinetas: ['bulletList'],
+    numerada: ['orderedList'],
+    cita: ['blockquote'],
+  };
+
+  for (const b of botones) {
+    // Con `mousedown` el editor perdería el cursor antes de ejecutar la acción.
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', () => {
+      const accion = b.dataset.accion ?? '';
+      ACCIONES[accion]?.();
+      pintarEstadoTools();
+    });
+  }
+
+  function pintarEstadoTools() {
+    for (const b of botones) {
+      const marca = ACTIVO[b.dataset.accion ?? ''];
+      if (!marca) continue;
+      b.setAttribute('aria-pressed', String(editor.isActive(marca[0], marca[1] as any)));
+    }
+  }
+
+  const enTelefono = () => window.matchMedia('(max-width: 820px)').matches;
+
+  function mostrarTools(visible: boolean) {
+    tools.hidden = !visible || !enTelefono();
+  }
+
+  editor.on('focus', () => mostrarTools(true));
+  editor.on('selectionUpdate', pintarEstadoTools);
+  editor.on('transaction', pintarEstadoTools);
+  // El foco se va tambien al tocar un boton de la barra: se espera un instante
+  // para no esconderla justo cuando se va a usar.
+  editor.on('blur', () => setTimeout(() => {
+    if (!tools.contains(document.activeElement)) mostrarTools(false);
+  }, 120));
+
+  // ── El teclado del teléfono tapa la barra ─────────────────
+  const vv = window.visualViewport;
+  function seguirTeclado() {
+    if (!vv) return;
+    const tapado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    shell.style.setProperty('--ed-teclado', `${Math.round(tapado)}px`);
+    shell.dataset.teclado = tapado > 120 ? 'si' : 'no';
+    tools.style.setProperty('--ed-teclado', `${Math.round(tapado)}px`);
+  }
+  vv?.addEventListener('resize', seguirTeclado);
+  vv?.addEventListener('scroll', seguirTeclado);
+  seguirTeclado();
+
+  window.addEventListener('resize', () => { if (!enTelefono()) tools.hidden = true; });
+
+  // ── Datos de la entrada, plegados ─────────────────────────
+  const detalles = $<HTMLDetailsElement>('ed-detalles');
+  const detallesResumen = $('ed-detalles-resumen');
+
+  function pintarResumenDetalles() {
+    const partes = [els.categoria.value.trim(), els.fecha.value, els.draft.checked ? 'borrador' : '']
+      .filter(Boolean);
+    detallesResumen.textContent = partes.join(' · ');
+  }
+  [els.categoria, els.fecha, els.draft].forEach((el) =>
+    el.addEventListener('input', pintarResumenDetalles));
+  pintarResumenDetalles();
+  // En pantalla ancha no hay razón para esconderlos.
+  if (!enTelefono()) detalles.open = true;
+
+  // ── Ajustes ───────────────────────────────────────────────
+  let instalacion: any = null;
+  const instalado = () =>
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as any).standalone === true;
+
+  function pintarAjustes() {
+    const oscuro = document.documentElement.getAttribute('data-theme') === 'dark';
+    $('ed-tema-sub').textContent = oscuro ? 'Oscuro' : 'Claro';
+    $('ed-acceso-sub').textContent = getToken() ? 'Token guardado' : 'Sin token';
+
+    const esApple = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    $('ed-instalada').hidden = !instalado();
+    $('ed-instalar').hidden = instalado() || !instalacion;
+    $('ed-instalar-ios').hidden = instalado() || !esApple || !!instalacion;
+  }
+
+  $('ed-tema').addEventListener('click', () => {
+    const oscuro = document.documentElement.getAttribute('data-theme') === 'dark';
+    const nuevo = oscuro ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', nuevo);
+    localStorage.setItem('theme', nuevo);
+    pintarAjustes();
+  });
+
+  $('ed-ir-acceso').addEventListener('click', () => abrirHoja('acceso'));
+  $('ed-ir-diagramas').addEventListener('click', () => {
+    abrirHoja('diagramas');
+    dibujarDiagramas();
+  });
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    instalacion = e;
+    if (hojaAbierta === 'ajustes') pintarAjustes();
+  });
+
+  $('ed-instalar').addEventListener('click', async () => {
+    if (!instalacion) return;
+    instalacion.prompt();
+    await instalacion.userChoice;
+    instalacion = null;
+    pintarAjustes();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    instalacion = null;
+    toast('App instalada. Ábrela desde su icono.');
+    pintarAjustes();
+  });
+
+  // ── Service worker ────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        /* sin service worker la app sigue funcionando: solo pierde el modo sin conexión */
+      });
+    });
+  }
+
+  // ── Atajos del icono de la app ────────────────────────────
+  const parametros = new URLSearchParams(location.search);
+  if (parametros.get('nueva')) nuevaEntrada();
+  const vista = parametros.get('vista');
+  if (vista && SECCIONES[vista]) abrirHoja(vista, 'vista');
+  if (parametros.has('nueva') || parametros.has('vista')) {
+    history.replaceState(null, '', location.pathname);
+  }
+
 </script>
 </html>
