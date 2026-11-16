@@ -216,13 +216,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   overflow: hidden;
 }
 .entry-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.45rem; }
+.entry-cat-fecha { display: none; }
 
 .tag {
   font-size: 0.6875rem;
-  color: var(--accent);
-  background: var(--accent-bg);
+  color: var(--muted);
+  background: var(--rail);
+  border: 1px solid var(--border);
   border-radius: 3px;
-  padding: 0.05rem 0.3rem;
+  padding: 0.05rem 0.35rem;
 }
 
 .list-empty { padding: 2rem 1rem; text-align: center; color: var(--faint); font-size: 0.8125rem; }
@@ -544,6 +546,22 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   .page { padding: 2.5rem 2.5rem 5rem; }
 }
 
+/* Resumen de la entrada para el teléfono: autor, fecha y categoría en una
+   línea. En pantalla ancha manda el bloque de propiedades completo. */
+.post-meta {
+  display: none;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.75rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.post-meta img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.post-meta a { color: var(--muted); }
+.post-meta a:hover { color: var(--text); }
+.post-meta .sep { color: var(--faint); }
+
 /* Debajo de 900px, un solo panel: la lista o la lectura, según la página. */
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; height: auto; overflow: visible; }
@@ -576,7 +594,81 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   .page-title, .hero-title { font-size: 1.875rem; }
   .prop { grid-template-columns: 1fr; gap: 0.1rem; }
   .stats { gap: 1.5rem; }
+
+  /* ── Una sola barra, y la navegación en un cajón ──
+     Dos filas de cromo antes del texto es lo que hacía que el blog no se
+     sintiera limpio en el teléfono. Queda una: menú, volver, título y tema. */
+  .reader-bar { display: none; }
+
+  .mobile-bar {
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    padding-top: calc(0.25rem + env(safe-area-inset-top));
+    background: var(--bg);
+    justify-content: flex-start;
+  }
+  .mb-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 6px;
+    font-size: 1rem;
+    color: var(--muted);
+  }
+  .mb-btn:hover, .mb-btn:focus-visible { background: var(--hover); color: var(--text); }
+  .mobile-bar-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.875rem;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rail {
+    display: flex;
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    z-index: 60;
+    width: min(82vw, 300px);
+    overflow-y: auto;
+    background: var(--rail);
+    border-right: 1px solid var(--border);
+    padding-top: env(safe-area-inset-top);
+    transform: translateX(-100%);
+    transition: transform 0.18s ease-out;
+    visibility: hidden;
+  }
+  :root[data-menu="on"] .rail { transform: translateX(0); visibility: visible; }
+  .rail-fondo {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(15, 15, 14, 0.4);
+  }
+  .rail-fondo[hidden] { display: none; }
+  .rail-item { min-height: 40px; }
+
+  /* ── Listado: título, una línea de contexto y poco más ── */
+  .entry { padding: 0.85rem 0.25rem; border-radius: 0; }
+  .entry-title { font-size: 0.9375rem; }
+  .entry-top .entry-date { display: none; }
+  .entry-cat-fecha { display: inline; color: var(--faint); }
+  .entry-cat { margin-bottom: 0.3rem; }
+  .entry-excerpt { -webkit-line-clamp: 2; }
+  .entry-tags { display: none; }
+  .list-bar { padding-left: 0.25rem; padding-right: 0.25rem; background: transparent; }
+  .list-scroll { padding-left: 1rem; padding-right: 1rem; }
+
+  /* ── Entrada: las propiedades en una línea, no en media pantalla ── */
+  .props { display: none; }
+  .post-meta { display: flex; }
 }
+
 
 .about-photo {
   width: 96px;

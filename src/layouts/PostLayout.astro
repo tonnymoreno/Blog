@@ -38,6 +38,17 @@ const dateFormatted = date.toLocaleDateString('es-MX', {
   <article>
     <h1 class="page-title">{title}</h1>
 
+    <!-- En el teléfono, lo esencial en una línea; el bloque completo queda
+         para la pantalla ancha. -->
+    <p class="post-meta">
+      <img src={`${base}${FOTO_PERFIL}`} alt="" width="22" height="22" />
+      <span>Tonny</span>
+      <span class="sep">·</span>
+      <span>{dateFormatted}</span>
+      <span class="sep">·</span>
+      <a href={`${base}categoria/${slugify(category)}`}>{category}</a>
+    </p>
+
     <div class="props">
       <div class="prop">
         <span class="prop-key">
